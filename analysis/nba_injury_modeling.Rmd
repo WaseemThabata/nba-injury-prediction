@@ -1,0 +1,14 @@
+# NBA Injury Risk Modeling - R Markdown Analysis
+
+## TODO: Upload the actual analysis file
+
+This file should contain the R Markdown analysis from:
+**NBA_Injury_Project_Final-1.Rmd**
+
+The analysis includes:
+- Data preprocessing and feature engineering
+- XGBoost model training across 3 time periods
+- Model evaluation yielding 0.6009 balanced accuracy
+- Top 5 predictor identification
+
+Please upload the complete .Rmd file to this location.
