@@ -1,0 +1,97 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nba-injury-prediction"
+version = "1.0.0"
+description = "XGBoost-based NBA injury risk prediction with SHAP interpretability"
+readme = "README.md"
+authors = [
+    {name = "Waseem Thabata", email = "contact@example.com"}
+]
+license = {text = "MIT"}
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+keywords = ["machine-learning", "sports-analytics", "xgboost", "injury-prediction", "shap"]
+dependencies = [
+    "numpy>=1.24.3",
+    "pandas>=2.0.3",
+    "xgboost>=1.7.6",
+    "scikit-learn>=1.3.0",
+    "matplotlib>=3.7.2",
+    "seaborn>=0.12.2",
+    "shap>=0.42.1",
+    "pyyaml>=6.0.1",
+    "streamlit>=1.28.0",
+    "openpyxl>=3.1.2",
+]
+requires-python = ">=3.9"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "black>=23.7.0",
+    "flake8>=6.1.0",
+    "mypy>=1.5.0",
+    "jupyter>=1.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/WaseemThabata/nba-injury-prediction"
+Repository = "https://github.com/WaseemThabata/nba-injury-prediction"
+Documentation = "https://github.com/WaseemThabata/nba-injury-prediction#readme"
+"Bug Tracker" = "https://github.com/WaseemThabata/nba-injury-prediction/issues"
+
+[project.scripts]
+nba-injury-train = "scripts.run_pipeline:main"
+nba-injury-demo = "scripts.demo_synthetic:main"
+
+[tool.setuptools]
+package-dir = {"" = "."}
+packages = ["src"]
+
+[tool.setuptools.package-data]
+"*" = ["*.yaml", "*.yml"]
+
+[tool.black]
+line-length = 100
+target-version = ['py39']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-ra -q --strict-markers --cov=src --cov-report=term-missing"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+ignore_missing_imports = true
