@@ -9,7 +9,11 @@ import yaml
 from pathlib import Path
 from datetime import datetime
 from typing import Optional, Tuple, Dict, Any
-from .model import InjuryPredictionModel
+
+try:
+    from .model import InjuryPredictionModel
+except ImportError:
+    from model import InjuryPredictionModel
 
 
 class InjuryPredictor:
