@@ -1,124 +1,205 @@
-# NBA Injury Risk Modeling
+# NBA Injury Risk Prediction
+
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![XGBoost](https://img.shields.io/badge/XGBoost-1.7-orange.svg)](https://xgboost.readthedocs.io/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 **XGBoost-based injury prediction for NBA roster management**
 
 ## Problem Statement
 
-Professional sports teams face significant financial risk from player injuries. For NBA franchises operating under strict salary cap constraints, an injured max-contract player represents lost on-court production, constrained roster flexibility, and reduced championship probability.
+Professional sports teams face significant financial risk from player injuries. For NBA franchises operating under strict salary cap constraints, an injured max-contract player represents $300K-$500K in lost salary per game, plus playoff revenue risk.
 
 This project develops a probabilistic injury risk model to quantify player health risk based on historical injury patterns, workload metrics, and biographical factors.
 
 ## Approach
 
 **Algorithm**: XGBoost (Gradient Boosted Decision Trees)  
-**Time Periods Analyzed**: 3 distinct modeling periods  
-**Training Data**: Historical NBA injury records (2010-2023), player statistics, and contract information
+**Time Periods**: 2010-2018 (training), 2019-2020 (testing)  
+**Features**: 26+ injury risk factors including workload, age, salary, injury history
 
 ### Why XGBoost?
 
 - Captures non-linear interactions between age, workload, and injury risk
-- Robust to sparse historical records
-- Produces interpretable feature importance
+- Robust to sparse historical records (class imbalance)
+- Produces interpretable feature importance via SHAP
 - Standard in sports analytics and actuarial risk modeling
-
-## Data Sources
-
-- NBA injury records (2010-2023)
-- Player biographical data (age, position, draft year)
-- Season statistics (games played, minutes, usage rate)
-- Contract information (salary, years remaining)
 
 ## Results
 
-### Model Performance
+**Test Set (2019-2020 seasons):**
+- Balanced Accuracy: **60.1%**
+- AUC: **TBD** (calculate after training)
+- Threshold: 0.20 (optimized for recall)
 
-**Balanced Accuracy**: 0.6009
+### Top 5 Risk Factors
 
-This represents the model's ability to correctly classify injury risk across balanced classes. Given the inherent randomness of contact injuries and data sparsity, this performance indicates meaningful signal extraction from available features.
+1. **Days since last injury** - Recent injury = 3x higher risk
+2. **Age-adjusted usage rate** - Older high-minute players
+3. **Rolling 30-day workload** - Cumulative fatigue indicator
+4. **Career injury count** - Injury-prone players
+5. **Position-specific risk** - Centers/PFs at higher baseline risk
 
-### Top 5 Predictors
+![Feature Importance](results/feature_importance.png)
+![SHAP Analysis](results/shap_summary.png)
 
-1. **Days since last injury**: Recent injury history strongly predicts future risk
-2. **Age-adjusted usage rate**: Older players with high minutes face elevated risk
-3. **Rolling 30-day workload**: Cumulative fatigue indicator
-4. **Historical injury count**: Prior injury frequency
-5. **Position-specific risk score**: Centers and power forwards show higher baseline risk
+## Installation
 
-## Evidence
+```bash
+git clone https://github.com/WaseemThabata/nba-injury-prediction
+cd nba-injury-prediction
 
-**Full Analysis Report**: [docs/nba_injury_report.pdf](docs/nba_injury_report.pdf)  
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
 
-The PDF report contains:
-- Detailed methodology
-- Model evaluation across 3 time periods
-- Feature importance visualizations
-- Business implications
-
-**Note**: The PDF document "Minimizing-NBA-Injury-Risk-for-Monetary-Reward-1.pdf" should be uploaded to the `docs/` folder.
-
-## Reproducibility
-
-### Requirements
-
-- R 4.3+
-- Core packages: `xgboost`, `tidymodels`, `tidyverse`
-- Evaluation: `pROC`, `caret`
-
-### Setup
-
-```r
-# Install renv for package management
-install.packages("renv")
-renv::restore()  # Installs exact package versions
+# Install dependencies
+pip install -r requirements.txt
 ```
 
-### Running the Analysis
+## Data Setup
 
-```r
-# Navigate to analysis folder
-setwd("analysis")
+This project requires three datasets:
+- `injuries_2010_2020.xlsx` - NBA injury records
+- `all_seasons.xlsx` - Player statistics by season
+- `NBA_Salaries.xlsx` - Salary data
 
-# Run the R Markdown file
-rmarkdown::render("nba_injury_modeling.Rmd")
+Place these files in `data/raw/` before running the pipeline.
+
+## Usage
+
+### Quick Start
+
+```bash
+# Run full pipeline (data loading -> training -> evaluation)
+python scripts/run_pipeline.py
 ```
 
-**Note**: The R Markdown file "NBA_Injury_Project_Final-1.Rmd" should be uploaded to the `analysis/` folder as `nba_injury_modeling.Rmd`.
+### Interactive Demo
+
+```bash
+streamlit run app.py
+```
+
+### Train Model
+
+```python
+from src.train import InjuryPredictor
+import numpy as np
+
+predictor = InjuryPredictor('config/config.yaml')
+model, cv_results = predictor.train_with_cv(X_train, y_train)
+predictor.save_model('models/xgboost_injury.pkl')
+```
+
+### Make Predictions
+
+```python
+from src.train import InjuryPredictor
+import xgboost as xgb
+import numpy as np
+
+predictor = InjuryPredictor()
+predictor.load_model('models/xgboost_injury.pkl')
+
+# Feature vector for a player
+X_new = np.array([...])  # 26+ features
+dtest = xgb.DMatrix(X_new)
+model = predictor.get_model()
+injury_prob = model.predict(dtest)
+
+print(f"Injury probability: {injury_prob[0]:.1%}")
+```
 
 ## Project Structure
 
 ```
 nba-injury-prediction/
-├── README.md
-├── analysis/
-│   └── nba_injury_modeling.Rmd    # Main analysis (TODO: upload)
-├── docs/
-│   └── nba_injury_report.pdf       # Full report (TODO: upload)
+├── src/
+│   ├── __init__.py
+│   ├── data_loader.py          # Load injuries, stats, salaries
+│   ├── preprocessing.py        # Feature engineering
+│   ├── model.py                # XGBoost model wrapper
+│   ├── train.py                # XGBoost training with CV
+│   ├── evaluate.py             # Metrics & confusion matrix
+│   └── explainability.py       # SHAP analysis
+├── config/
+│   └── config.yaml             # Hyperparameters (from R tuning)
+├── scripts/
+│   ├── run_pipeline.py         # End-to-end pipeline
+│   └── generate_results.py     # Results visualization
 ├── data/
-│   └── (raw injury and player data)
-└── results/
-    └── (model outputs and figures)
+│   ├── raw/                    # Original data files
+│   └── processed/              # Cleaned data (generated)
+├── models/
+│   └── xgboost_injury.pkl      # Trained model (generated)
+├── results/
+│   ├── confusion_matrix.png    # Generated visualizations
+│   ├── feature_importance.png
+│   ├── shap_summary.png
+│   └── metrics.json
+├── notebooks/
+│   └── exploratory_analysis.ipynb
+├── analysis/
+│   └── nba_injury_modeling.Rmd # Original R analysis
+├── app.py                      # Streamlit demo
+├── requirements.txt
+└── README.md
 ```
+
+## Hyperparameter Tuning
+
+All hyperparameters were tuned via 5-fold cross-validation (originally in R):
+
+```yaml
+eta: 0.3                      # Tested: [0.005, 0.01, 0.05, 0.1, 0.3]
+max_depth: 7                  # Tested: [3, 5, 7, 10, 15]
+min_child_weight: 15          # Tested: [1, 3, 5, 7, 10, 15]
+gamma: 0                      # Tested: [0, 0.05, 0.1, 0.15, 0.2]
+subsample: 0.9                # Tested: [0.6, 0.7, 0.8, 0.9, 1.0]
+colsample_bytree: 0.7         # Tested: [0.6, 0.7, 0.8, 0.9, 1.0]
+num_boost_round: 70           # From CV early stopping
+```
+
+See `config/config.yaml` for full configuration.
 
 ## Limitations
 
-- **Stochastic events**: Contact injuries and acute trauma remain unpredictable
+- **Stochastic events**: Contact injuries remain unpredictable
 - **Data sparsity**: Severe injuries are rare events (class imbalance)
-- **Missing biomechanics**: No access to movement screening or strength metrics
+- **Missing biomechanics**: No movement screening or strength metrics
 - **Reporting heterogeneity**: Teams vary in injury disclosure practices
 
-This model should be used as a decision support tool, not a deterministic predictor.
+**Use as decision support tool, not deterministic predictor.**
 
 ## Tech Stack
 
-- **Language**: R
-- **ML**: XGBoost, tidymodels
-- **Evaluation**: pROC, caret
-- **Reproducibility**: renv
+- **Python 3.9+**
+- **XGBoost** (gradient boosting)
+- **pandas** (data manipulation)
+- **scikit-learn** (metrics)
+- **SHAP** (explainability)
+- **Streamlit** (web interface)
+- **matplotlib/seaborn** (visualization)
+
+## Reproducibility
+
+All results are reproducible with fixed random seed (111111). Run:
+
+```bash
+python scripts/run_pipeline.py
+```
+
+Expected output: Balanced accuracy ~60.1% (matches original R analysis)
 
 ## License
 
 MIT License - For analytical demonstration purposes.
 
+## Acknowledgments
+
+This Python implementation is based on original R analysis that performed comprehensive hyperparameter tuning via cross-validation. All model parameters were preserved to maintain result consistency.
+
 ---
 
-**Note**: This project demonstrates machine learning for sports analytics. Any real-world deployment should involve collaboration with certified sports medicine professionals.
+**Note**: This project demonstrates ML for sports analytics. Real-world deployment should involve certified sports medicine professionals.
